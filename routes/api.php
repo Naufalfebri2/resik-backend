@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/outlets/{outletId}/menus', [MenuController::class, 'store']);
 
         Route::get('/ingredients/low-stock', [IngredientController::class, 'lowStock']);
+        Route::get('/ingredients/{ingredientId}', [IngredientController::class, 'show']);
 
         Route::get('/sections/{sectionId}/ingredients', [IngredientController::class, 'index']);
         Route::post('/sections/{sectionId}/ingredients', [IngredientController::class, 'store']);
@@ -76,9 +77,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/ingredients/{ingredientId}/daily-stocks', [DailyStockController::class, 'index']);
         Route::post('/ingredients/{ingredientId}/daily-stocks', [DailyStockController::class, 'store']);
+        Route::put('/ingredients/{ingredientId}/daily-stocks/{dailyStockId}', [DailyStockController::class, 'update']);
+        Route::delete('/ingredients/{ingredientId}/daily-stocks/{dailyStockId}', [DailyStockController::class, 'destroy']);
 
         Route::get('/daily-stocks/{dailyStockId}/outflows', [StockOutflowController::class, 'index']);
         Route::post('/daily-stocks/{dailyStockId}/outflows', [StockOutflowController::class, 'store']);
+        Route::put('/daily-stocks/{dailyStockId}/outflows/{outflowId}', [StockOutflowController::class, 'update']);
+        Route::delete('/daily-stocks/{dailyStockId}/outflows/{outflowId}', [StockOutflowController::class, 'destroy']);
         Route::put('/daily-stocks/{dailyStockId}/close', [StockOutflowController::class, 'closeDailyStock']);
 
         Route::get('/ingredients/{ingredientId}/stock-adjustments', [StockAdjustmentController::class, 'index']);

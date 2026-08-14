@@ -21,7 +21,13 @@ class IngredientController extends Controller
             return response()->json(['message' => 'Section not found'], 404);
         }
 
-        return response()->json($section->ingredients);
+        $ingredients = $section->ingredients;
+
+        $ingredients->each(function ($ingredient) {
+            $ingredient->current_stock = MenuAvailabilityService::getCurrentStock($ingredient);
+        });
+
+        return response()->json($ingredients);
     }
 
     public function lowStock(Request $request)
@@ -42,6 +48,24 @@ class IngredientController extends Controller
         return response()->json($ingredients);
     }
 
+    public function show(Request $request, string $ingredientId)
+    {
+        $ingredient = Ingredient::whereHas('section.outlet', function ($query) use ($request) {
+            $query->where('tenant_id', $request->user()->tenant_id);
+        })
+            ->with(['section.outlet'])
+            ->with(['dailyStocks' => function ($query) {
+                $query->orderBy('date', 'desc')->limit(30)->with('stockOutflows');
+            }])
+            ->find($ingredientId);
+
+        if (!$ingredient) {
+            return response()->json(['message' => 'Ingredient not found'], 404);
+        }
+
+        return response()->json($ingredient);
+    }
+
     public function store(Request $request, string $sectionId)
     {
         $section = $this->findOwnedSection($request, $sectionId);
@@ -54,7 +78,7 @@ class IngredientController extends Controller
             'name' => 'required|string|max:100',
             'unit' => 'required|string|max:20',
             'risk_category' => 'required|in:perishable,dry_goods',
-            'alert_threshold' => 'required|numeric|min:0',
+            'alert_threshold' => 'nullable|numeric|min:0',
             'custom_fields' => 'nullable|array',
         ]);
 
@@ -83,7 +107,7 @@ class IngredientController extends Controller
             'name' => $request->name,
             'unit' => $request->unit,
             'risk_category' => $request->risk_category,
-            'alert_threshold' => $request->alert_threshold,
+            'alert_threshold' => $request->alert_threshold ?? 0,
             'custom_fields' => $customFields,
         ]);
 
@@ -111,7 +135,7 @@ class IngredientController extends Controller
             'name' => 'sometimes|required|string|max:100',
             'unit' => 'sometimes|required|string|max:20',
             'risk_category' => 'sometimes|required|in:perishable,dry_goods',
-            'alert_threshold' => 'sometimes|required|numeric|min:0',
+            'alert_threshold' => 'sometimes|nullable|numeric|min:0',
             'custom_fields' => 'nullable|array',
         ]);
 
