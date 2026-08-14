@@ -88,6 +88,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/ingredients/{ingredientId}/stock-adjustments', [StockAdjustmentController::class, 'index']);
         Route::post('/ingredients/{ingredientId}/stock-adjustments', [StockAdjustmentController::class, 'store']);
+        Route::put('/ingredients/{ingredientId}/stock-adjustments/{adjustmentId}', [StockAdjustmentController::class, 'update']);
+        Route::delete('/ingredients/{ingredientId}/stock-adjustments/{adjustmentId}', [StockAdjustmentController::class, 'destroy']);
 
         Route::get('/suppliers', [SupplierController::class, 'index']);
         Route::post('/suppliers', [SupplierController::class, 'store']);

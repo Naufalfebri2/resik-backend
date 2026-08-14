@@ -79,6 +79,84 @@ class StockAdjustmentController extends Controller
         ], 201);
     }
 
+    public function update(Request $request, string $ingredientId, string $adjustmentId)
+    {
+        $ingredient = $this->findOwnedIngredient($request, $ingredientId);
+
+        if (!$ingredient) {
+            return response()->json(['message' => 'Ingredient not found'], 404);
+        }
+
+        $adjustment = $ingredient->stockAdjustments()->find($adjustmentId);
+
+        if (!$adjustment) {
+            return response()->json(['message' => 'Stock adjustment not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'adjustment_quantity' => 'required|numeric',
+            'reason' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $adjustment->update([
+            'adjustment_quantity' => $request->adjustment_quantity,
+            'reason' => $request->reason,
+        ]);
+
+        $dailyStock = DailyStock::where('ingredient_id', $ingredient->id)
+            ->where('date', $adjustment->date)
+            ->first();
+
+        if ($dailyStock) {
+            DailyStockCalculationService::recalculate($dailyStock);
+        }
+
+        MenuAvailabilityService::sync($ingredient);
+
+        return response()->json([
+            'message' => 'Stock adjustment updated successfully',
+            'stock_adjustment' => $adjustment->fresh(),
+            'daily_stock' => $dailyStock?->fresh(),
+        ]);
+    }
+
+    public function destroy(Request $request, string $ingredientId, string $adjustmentId)
+    {
+        $ingredient = $this->findOwnedIngredient($request, $ingredientId);
+
+        if (!$ingredient) {
+            return response()->json(['message' => 'Ingredient not found'], 404);
+        }
+
+        $adjustment = $ingredient->stockAdjustments()->find($adjustmentId);
+
+        if (!$adjustment) {
+            return response()->json(['message' => 'Stock adjustment not found'], 404);
+        }
+
+        $date = $adjustment->date;
+        $adjustment->delete();
+
+        $dailyStock = DailyStock::where('ingredient_id', $ingredient->id)
+            ->where('date', $date)
+            ->first();
+
+        if ($dailyStock) {
+            DailyStockCalculationService::recalculate($dailyStock);
+        }
+
+        MenuAvailabilityService::sync($ingredient);
+
+        return response()->json(['message' => 'Stock adjustment deleted successfully']);
+    }
+
     private function findOwnedIngredient(Request $request, string $ingredientId): ?Ingredient
     {
         return Ingredient::whereHas('section.outlet', function ($query) use ($request) {
