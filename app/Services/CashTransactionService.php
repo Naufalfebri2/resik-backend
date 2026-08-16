@@ -18,9 +18,11 @@ class CashTransactionService
         string $type,
         string $source,
         float $amount,
-        ?string $notes = null
+        ?string $notes = null,
+        ?string $purchaseOrderId = null
     ): CashTransaction {
         return $cashAccount->cashTransactions()->create([
+            'purchase_order_id' => $purchaseOrderId,
             'date' => $date,
             'type' => $type,
             'source' => $source,

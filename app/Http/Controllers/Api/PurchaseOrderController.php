@@ -102,6 +102,150 @@ class PurchaseOrderController extends Controller
         ], 201);
     }
 
+    public function update(Request $request, string $outletId, string $purchaseOrderId)
+    {
+        $outlet = $this->findOwnedOutlet($request, $outletId);
+
+        if (!$outlet) {
+            return response()->json(['message' => 'Outlet not found'], 404);
+        }
+
+        $purchaseOrder = $outlet->purchaseOrders()->with('items')->find($purchaseOrderId);
+
+        if (!$purchaseOrder) {
+            return response()->json(['message' => 'Purchase order not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'supplier_id' => 'required|uuid|exists:suppliers,id',
+            'date' => 'required|date',
+            'items' => 'required|array|min:1',
+            'items.*.ingredient_id' => 'required|uuid|exists:ingredients,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.unit_price' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        if ($purchaseOrder->status === 'received') {
+            $missingIngredients = [];
+
+            foreach ($request->items as $item) {
+                $exists = DailyStock::where('ingredient_id', $item['ingredient_id'])
+                    ->whereDate('date', $purchaseOrder->received_at)
+                    ->exists();
+
+                if (!$exists) {
+                    $missingIngredients[] = $item['ingredient_id'];
+                }
+            }
+
+            if (!empty($missingIngredients)) {
+                return response()->json([
+                    'message' => 'Cannot update items: daily stock closing has not been recorded for one or more ingredients on the received date',
+                    'errors' => [
+                        'ingredient_id' => $missingIngredients,
+                    ],
+                ], 422);
+            }
+        }
+
+        DB::transaction(function () use ($request, $purchaseOrder) {
+            $oldIngredientIds = $purchaseOrder->items->pluck('ingredient_id')->all();
+
+            $purchaseOrder->update([
+                'supplier_id' => $request->supplier_id,
+                'date' => $request->date,
+            ]);
+
+            $purchaseOrder->items()->delete();
+
+            foreach ($request->items as $item) {
+                $purchaseOrder->items()->create([
+                    'ingredient_id' => $item['ingredient_id'],
+                    'quantity' => $item['quantity'],
+                    'unit_price' => $item['unit_price'],
+                ]);
+            }
+
+            if ($purchaseOrder->status === 'received') {
+                $newIngredientIds = collect($request->items)->pluck('ingredient_id')->all();
+                $affectedIngredientIds = array_unique(array_merge($oldIngredientIds, $newIngredientIds));
+
+                foreach ($affectedIngredientIds as $ingredientId) {
+                    $dailyStock = DailyStock::where('ingredient_id', $ingredientId)
+                        ->whereDate('date', $purchaseOrder->received_at)
+                        ->first();
+
+                    if ($dailyStock) {
+                        DailyStockCalculationService::recalculate($dailyStock);
+                        MenuAvailabilityService::sync($dailyStock->ingredient);
+                    }
+                }
+
+                $newTotal = $purchaseOrder->items->fresh()->sum(function ($item) {
+                    return $item->quantity * $item->unit_price;
+                });
+
+                $cashTransaction = $purchaseOrder->cashTransaction;
+
+                if ($cashTransaction) {
+                    $cashTransaction->update(['amount' => $newTotal]);
+                }
+            }
+        });
+
+        return response()->json([
+            'message' => 'Purchase order updated successfully',
+            'purchase_order' => $purchaseOrder->fresh(['supplier', 'items.ingredient']),
+        ]);
+    }
+
+    public function destroy(Request $request, string $outletId, string $purchaseOrderId)
+    {
+        $outlet = $this->findOwnedOutlet($request, $outletId);
+
+        if (!$outlet) {
+            return response()->json(['message' => 'Outlet not found'], 404);
+        }
+
+        $purchaseOrder = $outlet->purchaseOrders()->with('items')->find($purchaseOrderId);
+
+        if (!$purchaseOrder) {
+            return response()->json(['message' => 'Purchase order not found'], 404);
+        }
+
+        DB::transaction(function () use ($purchaseOrder) {
+            $wasReceived = $purchaseOrder->status === 'received';
+            $ingredientIds = $purchaseOrder->items->pluck('ingredient_id')->unique()->all();
+            $receivedAt = $purchaseOrder->received_at;
+
+            $purchaseOrder->cashTransaction?->delete();
+            $purchaseOrder->items()->delete();
+            $purchaseOrder->delete();
+
+            if ($wasReceived) {
+                foreach ($ingredientIds as $ingredientId) {
+                    $dailyStock = DailyStock::where('ingredient_id', $ingredientId)
+                        ->whereDate('date', $receivedAt)
+                        ->first();
+
+                    if ($dailyStock) {
+                        DailyStockCalculationService::recalculate($dailyStock);
+                        MenuAvailabilityService::sync($dailyStock->ingredient);
+                    }
+                }
+            }
+        });
+
+        return response()->json(['message' => 'Purchase order deleted successfully']);
+    }
+
     public function updateStatus(Request $request, string $outletId, string $purchaseOrderId)
     {
         $outlet = $this->findOwnedOutlet($request, $outletId);
@@ -205,7 +349,8 @@ class PurchaseOrderController extends Controller
                     'out',
                     'purchase_order',
                     $totalAmount,
-                    "Purchase order #{$purchaseOrder->id}"
+                    "Purchase order #{$purchaseOrder->id}",
+                    $purchaseOrder->id
                 );
             }
         });

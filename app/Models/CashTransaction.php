@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\CashAccount;
+use App\Models\PurchaseOrder;
 
 
 class CashTransaction extends Model
@@ -15,6 +16,7 @@ class CashTransaction extends Model
 
     protected $fillable = [
         'cash_account_id',
+        'purchase_order_id',
         'date',
         'type',
         'source',
@@ -29,5 +31,10 @@ class CashTransaction extends Model
     public function cashAccount(): BelongsTo
     {
         return $this->belongsTo(CashAccount::class);
+    }
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class);
     }
 }

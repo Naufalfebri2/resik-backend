@@ -99,6 +99,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/outlets/{outletId}/purchase-orders', [PurchaseOrderController::class, 'index']);
         Route::post('/outlets/{outletId}/purchase-orders', [PurchaseOrderController::class, 'store']);
         Route::get('/outlets/{outletId}/purchase-orders/{purchaseOrderId}', [PurchaseOrderController::class, 'show']);
+        Route::put('/outlets/{outletId}/purchase-orders/{purchaseOrderId}', [PurchaseOrderController::class, 'update']);
+        Route::delete('/outlets/{outletId}/purchase-orders/{purchaseOrderId}', [PurchaseOrderController::class, 'destroy']);
         Route::put('/outlets/{outletId}/purchase-orders/{purchaseOrderId}/status', [PurchaseOrderController::class, 'updateStatus']);
 
         Route::post('/outlets/{outletId}/cash-accounts', [CashAccountController::class, 'store']);
