@@ -115,6 +115,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/sections/{sectionId}/employees', [EmployeeController::class, 'store']);
         Route::put('/sections/{sectionId}/employees/{employeeId}', [EmployeeController::class, 'update']);
         Route::delete('/sections/{sectionId}/employees/{employeeId}', [EmployeeController::class, 'destroy']);
+        Route::put('/sections/{sectionId}/employees/{employeeId}/move', [EmployeeController::class, 'move']);
 
         Route::get('/sections/{sectionId}/shifts', [ShiftController::class, 'index']);
         Route::post('/sections/{sectionId}/shifts', [ShiftController::class, 'store']);

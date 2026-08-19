@@ -154,6 +154,59 @@ class EmployeeController extends Controller
         ]);
     }
 
+    public function move(Request $request, string $sectionId, string $employeeId)
+    {
+        $section = $this->findOwnedSection($request, $sectionId);
+
+        if (!$section) {
+            return response()->json(['message' => 'Section not found'], 404);
+        }
+
+        $employee = $section->employees()->find($employeeId);
+
+        if (!$employee) {
+            return response()->json(['message' => 'Employee not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'target_section_id' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        if ($request->target_section_id === $sectionId) {
+            return response()->json([
+                'message' => 'Employee is already in this section.',
+            ], 422);
+        }
+
+        $targetSection = $this->findOwnedSection($request, $request->target_section_id);
+
+        if (!$targetSection) {
+            return response()->json(['message' => 'Target section not found'], 404);
+        }
+
+        $targetExistingRole = $targetSection->employees()->value('role');
+
+        if ($targetExistingRole !== null && $targetExistingRole !== $employee->role) {
+            return response()->json([
+                'message' => "The target section already uses the role \"{$targetExistingRole}\", which doesn't match this employee's role (\"{$employee->role}\"). Update the employee's role first, or choose a different section.",
+            ], 422);
+        }
+
+        $employee->update(['section_id' => $targetSection->id]);
+
+        return response()->json([
+            'message' => 'Employee moved successfully',
+            'employee' => $employee,
+        ]);
+    }
+
     public function destroy(Request $request, string $sectionId, string $employeeId)
     {
         $section = $this->findOwnedSection($request, $sectionId);
