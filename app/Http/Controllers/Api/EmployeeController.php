@@ -20,7 +20,7 @@ class EmployeeController extends Controller
             return response()->json(['message' => 'Section not found'], 404);
         }
 
-        return response()->json($section->employees);
+        return response()->json($section->employees()->orderBy('start_date')->get());
     }
 
     public function store(Request $request, string $sectionId)
@@ -34,16 +34,26 @@ class EmployeeController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
             'phone' => 'required|string|max:20',
-            'role' => 'required|in:staff,admin,owner',
+            'role' => ['required', 'string', 'max:50', 'regex:/^[A-Z][a-zA-Z\s]*$/'],
             'start_date' => 'required|date',
             'base_salary' => 'required|numeric|min:0',
             'custom_fields' => 'nullable|array',
+        ], [
+            'role.regex' => 'Role must start with a capital letter (e.g. "Barista", not "barista").',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $existingRole = $section->employees()->value('role');
+
+        if ($existingRole !== null && $existingRole !== $request->role) {
+            return response()->json([
+                'message' => "This section already uses the role \"{$existingRole}\". All employees in a section must share the same role — create a new section if you need a different role.",
             ], 422);
         }
 
@@ -92,10 +102,12 @@ class EmployeeController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:100',
             'phone' => 'sometimes|string|max:20',
-            'role' => 'sometimes|in:staff,admin,owner',
+            'role' => ['sometimes', 'string', 'max:50', 'regex:/^[A-Z][a-zA-Z\s]*$/'],
             'base_salary' => 'sometimes|numeric|min:0',
             'is_active' => 'sometimes|boolean',
             'custom_fields' => 'nullable|array',
+        ], [
+            'role.regex' => 'Role must start with a capital letter (e.g. "Barista", not "barista").',
         ]);
 
         if ($validator->fails()) {
@@ -103,6 +115,18 @@ class EmployeeController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $validator->errors(),
             ], 422);
+        }
+
+        if ($request->has('role')) {
+            $existingRole = $section->employees()
+                ->where('id', '!=', $employee->id)
+                ->value('role');
+
+            if ($existingRole !== null && $existingRole !== $request->role) {
+                return response()->json([
+                    'message' => "This section already uses the role \"{$existingRole}\". All employees in a section must share the same role — create a new section if you need a different role.",
+                ], 422);
+            }
         }
 
         $updateData = $request->only(['name', 'phone', 'role', 'base_salary', 'is_active']);

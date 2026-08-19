@@ -98,6 +98,30 @@ class SectionController extends Controller
             return response()->json(['message' => 'Section not found'], 404);
         }
 
+        $employeeCount = $section->employees()->count();
+        $shiftCount = $section->shifts()->count();
+        $ingredientCount = $section->ingredients()->count();
+
+        if ($employeeCount > 0 || $shiftCount > 0 || $ingredientCount > 0) {
+            $parts = [];
+
+            if ($employeeCount > 0) {
+                $parts[] = "{$employeeCount} employee(s)";
+            }
+            if ($shiftCount > 0) {
+                $parts[] = "{$shiftCount} shift(s)";
+            }
+            if ($ingredientCount > 0) {
+                $parts[] = "{$ingredientCount} ingredient(s)";
+            }
+
+            $detail = implode(', ', $parts);
+
+            return response()->json([
+                'message' => "Cannot delete section: it still has {$detail}. Move or remove them first.",
+            ], 422);
+        }
+
         $section->delete();
 
         return response()->json(['message' => 'Section deleted successfully']);
