@@ -131,6 +131,12 @@ class EmployeeController extends Controller
 
         $updateData = $request->only(['name', 'phone', 'role', 'base_salary', 'is_active']);
 
+        if ($request->has('is_active')) {
+            $updateData['finish_date'] = $request->boolean('is_active')
+                ? null
+                : now()->toDateString();
+        }
+
         if ($request->has('custom_fields')) {
             try {
                 $updateData['custom_fields'] = CustomFieldValidator::validate(

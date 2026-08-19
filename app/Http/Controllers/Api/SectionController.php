@@ -18,7 +18,7 @@ class SectionController extends Controller
             return response()->json(['message' => 'Outlet not found'], 404);
         }
 
-        return response()->json($outlet->sections);
+        return response()->json($outlet->sections()->withCount('employees')->get());
     }
 
     public function store(Request $request, string $outletId)

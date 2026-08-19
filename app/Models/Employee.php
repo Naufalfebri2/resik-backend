@@ -25,6 +25,7 @@ class Employee extends Model
         'phone',
         'role',
         'start_date',
+        'finish_date',
         'base_salary',
         'remaining_leave_quota',
         'is_active',
@@ -33,6 +34,7 @@ class Employee extends Model
 
     protected $casts = [
         'start_date' => 'date',
+        'finish_date' => 'date',
         'is_active' => 'boolean',
         'custom_fields' => 'array',
     ];
