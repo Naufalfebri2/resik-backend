@@ -31,6 +31,7 @@ class PayrollController extends Controller
         })
             ->where('month', $monthStart)
             ->with('employee')
+            ->orderBy('created_at')
             ->get();
 
         return response()->json($periods);
