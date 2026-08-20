@@ -5,17 +5,24 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\Shift;
+use App\Traits\ChecksManagerOutletAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ShiftScheduleController extends Controller
 {
+    use ChecksManagerOutletAccess;
+
     public function index(Request $request, string $employeeId)
     {
         $employee = $this->findOwnedEmployee($request, $employeeId);
 
         if (!$employee) {
             return response()->json(['message' => 'Employee not found'], 404);
+        }
+
+        if ($response = $this->authorizeManagerOutlet($request, $employee->section->outlet_id)) {
+            return $response;
         }
 
         return response()->json(

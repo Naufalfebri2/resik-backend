@@ -4,17 +4,24 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Section;
+use App\Traits\ChecksManagerOutletAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ShiftController extends Controller
 {
+    use ChecksManagerOutletAccess;
+
     public function index(Request $request, string $sectionId)
     {
         $section = $this->findOwnedSection($request, $sectionId);
 
         if (!$section) {
             return response()->json(['message' => 'Section not found'], 404);
+        }
+
+        if ($response = $this->authorizeManagerOutlet($request, $section->outlet_id)) {
+            return $response;
         }
 
         return response()->json($section->shifts);

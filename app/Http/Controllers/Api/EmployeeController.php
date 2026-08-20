@@ -6,18 +6,25 @@ use App\Http\Controllers\Controller;
 use App\Models\Employee;
 use App\Models\Section;
 use App\Services\CustomFieldValidator;
+use App\Traits\ChecksManagerOutletAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class EmployeeController extends Controller
 {
+    use ChecksManagerOutletAccess;
+
     public function index(Request $request, string $sectionId)
     {
         $section = $this->findOwnedSection($request, $sectionId);
 
         if (!$section) {
             return response()->json(['message' => 'Section not found'], 404);
+        }
+
+        if ($response = $this->authorizeManagerOutlet($request, $section->outlet_id)) {
+            return $response;
         }
 
         return response()->json($section->employees()->orderBy('start_date')->get());

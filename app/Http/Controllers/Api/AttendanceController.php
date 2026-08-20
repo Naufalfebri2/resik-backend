@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Traits\ChecksManagerOutletAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class AttendanceController extends Controller
 {
+    use ChecksManagerOutletAccess;
+
     private const GEOFENCE_RADIUS_METERS = 100;
     private const MINIMUM_MONTHS_FOR_LEAVE = 12;
 
@@ -20,6 +23,10 @@ class AttendanceController extends Controller
 
         if (!$employee) {
             return response()->json(['message' => 'Employee not found'], 404);
+        }
+
+        if ($response = $this->authorizeManagerOutlet($request, $employee->section->outlet_id)) {
+            return $response;
         }
 
         return response()->json(

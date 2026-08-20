@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ShiftSchedule;
 use App\Models\ShiftSwapRequest;
+use App\Traits\ChecksManagerOutletAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class ShiftSwapRequestController extends Controller
 {
+    use ChecksManagerOutletAccess;
+
     public function index(Request $request)
     {
         $requests = ShiftSwapRequest::whereHas('requesterSchedule.employee.section.outlet', function ($query) use ($request) {
@@ -80,10 +83,14 @@ class ShiftSwapRequestController extends Controller
     {
         $swapRequest = ShiftSwapRequest::whereHas('requesterSchedule.employee.section.outlet', function ($query) use ($request) {
             $query->where('tenant_id', $request->user()->tenant_id);
-        })->with(['requesterSchedule', 'targetSchedule'])->find($swapRequestId);
+        })->with(['requesterSchedule.employee.section', 'targetSchedule'])->find($swapRequestId);
 
         if (!$swapRequest) {
             return response()->json(['message' => 'Shift swap request not found'], 404);
+        }
+
+        if ($response = $this->authorizeManagerOutlet($request, $swapRequest->requesterSchedule->employee->section->outlet_id)) {
+            return $response;
         }
 
         if ($swapRequest->status !== 'pending') {
@@ -122,10 +129,14 @@ class ShiftSwapRequestController extends Controller
     {
         $swapRequest = ShiftSwapRequest::whereHas('requesterSchedule.employee.section.outlet', function ($query) use ($request) {
             $query->where('tenant_id', $request->user()->tenant_id);
-        })->with(['requesterSchedule', 'targetSchedule'])->find($swapRequestId);
+        })->with(['requesterSchedule.employee.section', 'targetSchedule'])->find($swapRequestId);
 
         if (!$swapRequest) {
             return response()->json(['message' => 'Shift swap request not found'], 404);
+        }
+
+        if ($response = $this->authorizeManagerOutlet($request, $swapRequest->requesterSchedule->employee->section->outlet_id)) {
+            return $response;
         }
 
         if ($swapRequest->status !== 'pending') {

@@ -111,27 +111,21 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/sections/{sectionId}/closing-summary', [ClosingSummaryController::class, 'section']);
 
-        Route::get('/sections/{sectionId}/employees', [EmployeeController::class, 'index']);
         Route::post('/sections/{sectionId}/employees', [EmployeeController::class, 'store']);
         Route::put('/sections/{sectionId}/employees/{employeeId}', [EmployeeController::class, 'update']);
         Route::delete('/sections/{sectionId}/employees/{employeeId}', [EmployeeController::class, 'destroy']);
         Route::put('/sections/{sectionId}/employees/{employeeId}/move', [EmployeeController::class, 'move']);
 
-        Route::get('/sections/{sectionId}/shifts', [ShiftController::class, 'index']);
         Route::post('/sections/{sectionId}/shifts', [ShiftController::class, 'store']);
         Route::put('/sections/{sectionId}/shifts/{shiftId}', [ShiftController::class, 'update']);
         Route::delete('/sections/{sectionId}/shifts/{shiftId}', [ShiftController::class, 'destroy']);
 
-        Route::get('/employees/{employeeId}/shift-schedules', [ShiftScheduleController::class, 'index']);
         Route::post('/employees/{employeeId}/shift-schedules', [ShiftScheduleController::class, 'store']);
         Route::delete('/employees/{employeeId}/shift-schedules/{scheduleId}', [ShiftScheduleController::class, 'destroy']);
 
         Route::get('/shift-swap-requests', [ShiftSwapRequestController::class, 'index']);
         Route::post('/shift-swap-requests', [ShiftSwapRequestController::class, 'store']);
-        Route::put('/shift-swap-requests/{swapRequestId}/approve', [ShiftSwapRequestController::class, 'approve']);
-        Route::put('/shift-swap-requests/{swapRequestId}/reject', [ShiftSwapRequestController::class, 'reject']);
 
-        Route::get('/employees/{employeeId}/attendance', [AttendanceController::class, 'index']);
         Route::post('/employees/{employeeId}/attendance/check-in', [AttendanceController::class, 'checkIn']);
         Route::post('/employees/{employeeId}/attendance/check-out', [AttendanceController::class, 'checkOut']);
         Route::post('/employees/{employeeId}/attendance/mark-status', [AttendanceController::class, 'markStatus']);
@@ -174,6 +168,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/custom-field-definitions', [CustomFieldDefinitionController::class, 'index']);
         Route::post('/custom-field-definitions', [CustomFieldDefinitionController::class, 'store']);
         Route::delete('/custom-field-definitions/{id}', [CustomFieldDefinitionController::class, 'destroy']);
+    });
+
+    Route::middleware('role:owner,admin,manager')->group(function () {
+        Route::get('/sections/{sectionId}/employees', [EmployeeController::class, 'index']);
+        Route::get('/sections/{sectionId}/shifts', [ShiftController::class, 'index']);
+        Route::get('/employees/{employeeId}/shift-schedules', [ShiftScheduleController::class, 'index']);
+        Route::get('/employees/{employeeId}/attendance', [AttendanceController::class, 'index']);
+        Route::put('/shift-swap-requests/{swapRequestId}/approve', [ShiftSwapRequestController::class, 'approve']);
+        Route::put('/shift-swap-requests/{swapRequestId}/reject', [ShiftSwapRequestController::class, 'reject']);
     });
 
     Route::middleware(['role:owner,admin,manager', 'outlet.scope'])->group(function () {
