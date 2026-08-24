@@ -33,6 +33,7 @@ class OrderPaymentController extends Controller
             'payments' => 'required|array|min:1',
             'payments.*.method' => 'required|in:cash,edc_bca,edc_bri,qr_bri,qr_gopay,qr_shopeepay,other',
             'payments.*.amount' => 'required|numeric|min:0.01',
+            'payments.*.cash_received' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -49,9 +50,14 @@ class OrderPaymentController extends Controller
         }
 
         $activeItems = $order->items()->where('refund_status', 'none')->get();
-        $totalDue = $activeItems->sum(function ($item) {
+        $subtotal = $activeItems->sum(function ($item) {
             return $item->unit_price * $item->quantity;
         });
+
+        $servicePercentage = (float) ($request->user()->tenant->settings['service_charge_percentage'] ?? 0);
+        $taxAmount = round($subtotal * 0.11, 2);
+        $serviceChargeAmount = round($subtotal * ($servicePercentage / 100), 2);
+        $totalDue = $subtotal + $taxAmount + $serviceChargeAmount;
 
         $totalPaid = collect($request->payments)->sum('amount');
 
@@ -66,15 +72,25 @@ class OrderPaymentController extends Controller
             ], 422);
         }
 
-        DB::transaction(function () use ($request, $order, $cashAccount, $totalDue) {
+        DB::transaction(function () use ($request, $order, $cashAccount, $subtotal, $taxAmount, $serviceChargeAmount, $totalDue) {
             foreach ($request->payments as $payment) {
+                $cashReceived = $payment['cash_received'] ?? null;
+                $changeAmount = $cashReceived !== null ? $cashReceived - $payment['amount'] : null;
+
                 $order->payments()->create([
                     'method' => $payment['method'],
                     'amount' => $payment['amount'],
+                    'cash_received' => $cashReceived,
+                    'change_amount' => $changeAmount,
                 ]);
             }
 
-            $order->update(['status' => 'paid']);
+            $order->update([
+                'status' => 'paid',
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'service_charge_amount' => $serviceChargeAmount,
+            ]);
 
             CashTransactionService::record(
                 $cashAccount,

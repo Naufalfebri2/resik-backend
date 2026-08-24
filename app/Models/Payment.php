@@ -16,6 +16,8 @@ class Payment extends Model
         'order_id',
         'method',
         'amount',
+        'cash_received',
+        'change_amount',
     ];
 
     public function order(): BelongsTo

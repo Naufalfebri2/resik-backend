@@ -34,6 +34,9 @@ class Order extends Model
         'input_method',
         'courier_status',
         'courier_picked_up_at',
+        'subtotal',
+        'tax_amount',
+        'service_charge_amount',
     ];
 
     protected $casts = [
