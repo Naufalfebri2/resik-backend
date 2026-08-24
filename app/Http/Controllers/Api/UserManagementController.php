@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Concerns\ResolvesTenantOrder;
 use App\Http\Controllers\Controller;
 use App\Models\Outlet;
 use App\Models\User;
@@ -12,6 +13,33 @@ use InvalidArgumentException;
 
 class UserManagementController extends Controller
 {
+    use ResolvesTenantOrder;
+
+    public function index(Request $request, string $outletId)
+    {
+        $outlet = $this->findOwnedOutlet($request, $outletId);
+
+        if (!$outlet) {
+            return response()->json(['message' => 'Outlet not found'], 404);
+        }
+
+        $users = User::where('outlet_id', $outlet->id)
+            ->with('employee:id,name')
+            ->get(['id', 'email', 'role', 'employee_id'])
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->employee->name ?? $user->email,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                ];
+            })
+            ->sortBy('name')
+            ->values();
+
+        return response()->json($users);
+    }
+
     public function createManager(Request $request)
     {
         $validator = Validator::make($request->all(), [

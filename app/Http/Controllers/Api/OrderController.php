@@ -33,6 +33,74 @@ class OrderController extends Controller
         return response()->json($orders);
     }
 
+    public function history(Request $request, string $outletId)
+    {
+        $outlet = $this->findOwnedOutlet($request, $outletId);
+
+        if (!$outlet) {
+            return response()->json(['message' => 'Outlet not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'nullable|in:success,refund,cancelled',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date',
+            'table_id' => 'nullable|uuid|exists:tables,id',
+            'cashier_id' => 'nullable|uuid|exists:users,id',
+            'payment_method' => 'nullable|in:cash,edc_bca,edc_bri,qr_bri,qr_gopay,qr_shopeepay,other',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $statusMap = [
+            'success' => ['paid'],
+            'refund' => ['refunded', 'partially_refunded'],
+            'cancelled' => ['cancelled'],
+        ];
+
+        $query = $outlet->orders()
+            ->with(['table', 'items.menu', 'payments', 'openedBy.employee'])
+            ->whereIn('status', ['paid', 'refunded', 'partially_refunded', 'cancelled']);
+
+        if ($request->filled('status')) {
+            $query->whereIn('status', $statusMap[$request->input('status')]);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->input('date_from'));
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->input('date_to'));
+        }
+
+        if ($request->filled('table_id')) {
+            $query->where('table_id', $request->input('table_id'));
+        }
+
+        if ($request->filled('cashier_id')) {
+            $query->where('opened_by', $request->input('cashier_id'));
+        }
+
+        if ($request->filled('payment_method')) {
+            $query->whereHas('payments', function ($paymentQuery) use ($request) {
+                $paymentQuery->where('method', $request->input('payment_method'));
+            });
+        }
+
+        $perPage = (int) $request->input('per_page', 20);
+
+        $orders = $query->orderBy('created_at', 'desc')->paginate($perPage);
+
+        return response()->json($orders);
+    }
+
     public function show(Request $request, string $outletId, string $orderId)
     {
         $order = $this->findOwnedOrder($request, $outletId, $orderId);

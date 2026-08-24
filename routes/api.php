@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\OrderDeliveryController;
 use App\Http\Controllers\Api\OrderItemController;
 use App\Http\Controllers\Api\OrderPaymentController;
 use App\Http\Controllers\Api\OrderPrepController;
+use App\Http\Controllers\Api\OrderReceiptController;
 use App\Http\Controllers\Api\OutletController;
 use App\Http\Controllers\Api\PayrollController;
 use App\Http\Controllers\Api\PublicOrderController;
@@ -142,6 +143,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/sections/{sectionId}/tables/{tableId}', [TableController::class, 'destroy']);
 
         Route::get('/outlets/{outletId}/orders', [OrderController::class, 'index']);
+        Route::get('/outlets/{outletId}/orders/history', [OrderController::class, 'history']);
+        Route::get('/outlets/{outletId}/users', [UserManagementController::class, 'index']);
         Route::post('/outlets/{outletId}/orders', [OrderController::class, 'store']);
         Route::get('/outlets/{outletId}/orders/{orderId}', [OrderController::class, 'show']);
         Route::put('/outlets/{outletId}/orders/{orderId}/acknowledge', [OrderController::class, 'acknowledge']);
@@ -151,6 +154,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/outlets/{outletId}/orders/{orderId}/items/{orderItemId}/refund', [OrderPaymentController::class, 'refundItem']);
         Route::post('/outlets/{outletId}/orders/{orderId}/cancel-all', [OrderPaymentController::class, 'cancelAll']);
         Route::post('/outlets/{outletId}/orders/{orderId}/pay', [OrderPaymentController::class, 'pay']);
+        Route::get('/outlets/{outletId}/orders/{orderId}/receipt', [OrderReceiptController::class, 'pdf']);
 
         Route::post('/outlets/{outletId}/delivery-orders', [OrderDeliveryController::class, 'store']);
         Route::put('/outlets/{outletId}/delivery-orders/{orderId}/courier-status', [OrderDeliveryController::class, 'updateCourierStatus']);
