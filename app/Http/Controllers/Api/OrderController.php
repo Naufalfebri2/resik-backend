@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Concerns\ResolvesTenantOrder;
 use App\Http\Controllers\Controller;
 use App\Models\Menu;
+use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -99,6 +100,17 @@ class OrderController extends Controller
         $orders = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         return response()->json($orders);
+    }
+
+    public function unacknowledgedCount(Request $request)
+    {
+        $count = Order::whereNull('acknowledged_at')
+            ->whereHas('outlet', function ($query) use ($request) {
+                $query->where('tenant_id', $request->user()->tenant_id);
+            })
+            ->count();
+
+        return response()->json(['count' => $count]);
     }
 
     public function show(Request $request, string $outletId, string $orderId)

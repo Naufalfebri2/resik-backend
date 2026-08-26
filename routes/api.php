@@ -144,6 +144,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/outlets/{outletId}/orders', [OrderController::class, 'index']);
         Route::get('/outlets/{outletId}/orders/history', [OrderController::class, 'history']);
+        Route::get('/orders/unacknowledged-count', [OrderController::class, 'unacknowledgedCount']);
         Route::get('/outlets/{outletId}/users', [UserManagementController::class, 'index']);
         Route::post('/outlets/{outletId}/orders', [OrderController::class, 'store']);
         Route::get('/outlets/{outletId}/orders/{orderId}', [OrderController::class, 'show']);
