@@ -43,6 +43,40 @@ class TableBookingController extends Controller
         return response()->json($booking->load(['table', 'tableAssignments.table']));
     }
 
+    public function availableTables(Request $request, string $outletId)
+    {
+        $outlet = $this->findOwnedOutlet($request, $outletId);
+
+        if (!$outlet) {
+            return response()->json(['message' => 'Outlet not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'datetime' => 'required|date',
+            'duration_minutes' => 'nullable|integer|min:15',
+            'exclude_booking_id' => 'nullable|uuid|exists:table_bookings,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $startTime = Carbon::parse($request->datetime);
+        $durationMinutes = $request->duration_minutes ?? 120;
+
+        $tables = BookingAvailabilityService::getAvailabilityForOutlet(
+            $outlet->id,
+            $startTime,
+            $durationMinutes,
+            $request->exclude_booking_id
+        );
+
+        return response()->json($tables);
+    }
+
     public function store(Request $request, string $outletId)
     {
         $outlet = $this->findOwnedOutlet($request, $outletId);
@@ -85,6 +119,7 @@ class TableBookingController extends Controller
             $bookingDatetime,
             $durationMinutes
         );
+
 
         if (!$isAvailable) {
             return response()->json([

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Table;
 use App\Models\TableBooking;
 use Carbon\Carbon;
 
@@ -65,6 +66,30 @@ class BookingAvailabilityService
         }
 
         return $unavailable;
+    }
+
+    public static function getAvailabilityForOutlet(
+        string $outletId,
+        Carbon $startTime,
+        int $durationMinutes,
+        ?string $excludeBookingId = null
+    ): array {
+        $tables = Table::whereHas('section', fn($q) => $q->where('outlet_id', $outletId))
+            ->orderBy('table_number')
+            ->get();
+
+        return $tables->map(function (Table $table) use ($startTime, $durationMinutes, $excludeBookingId) {
+            return [
+                'id' => $table->id,
+                'table_number' => $table->table_number,
+                'is_available' => self::isTableAvailable(
+                    $table->id,
+                    $startTime,
+                    $durationMinutes,
+                    $excludeBookingId
+                ),
+            ];
+        })->toArray();
     }
 
     private static function rangesOverlap(Carbon $startA, Carbon $endA, Carbon $startB, Carbon $endB): bool

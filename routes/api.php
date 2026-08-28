@@ -160,14 +160,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/outlets/{outletId}/delivery-orders', [OrderDeliveryController::class, 'store']);
         Route::put('/outlets/{outletId}/delivery-orders/{orderId}/courier-status', [OrderDeliveryController::class, 'updateCourierStatus']);
 
-        Route::get('/outlets/{outletId}/bookings', [TableBookingController::class, 'index']);
-        Route::post('/outlets/{outletId}/bookings', [TableBookingController::class, 'store']);
-        Route::get('/outlets/{outletId}/bookings/{bookingId}', [TableBookingController::class, 'show']);
-        Route::post('/outlets/{outletId}/bookings/event', [BookingEventController::class, 'store']);
-        Route::put('/outlets/{outletId}/bookings/{bookingId}/advance', [BookingStatusController::class, 'advance']);
-        Route::put('/outlets/{outletId}/bookings/{bookingId}/cancel', [BookingStatusController::class, 'cancel']);
-        Route::put('/outlets/{outletId}/bookings/{bookingId}/no-show', [BookingStatusController::class, 'markNoShow']);
-
         Route::get('/tenant', [TenantController::class, 'show']);
 
         Route::get('/custom-field-definitions', [CustomFieldDefinitionController::class, 'index']);
@@ -191,6 +183,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/cash-accounts/{cashAccountId}/cashflow', [CashflowReportController::class, 'forAccount']);
         Route::get('/cash-accounts/{cashAccountId}/reconciliations', [CashReconciliationController::class, 'index']);
         Route::post('/cash-accounts/{cashAccountId}/reconciliations', [CashReconciliationController::class, 'store']);
+
+        Route::get('/outlets/{outletId}/bookings', [TableBookingController::class, 'index']);
+        Route::get('/outlets/{outletId}/bookings/available-tables', [TableBookingController::class, 'availableTables']);
+        Route::post('/outlets/{outletId}/bookings', [TableBookingController::class, 'store']);
+        Route::get('/outlets/{outletId}/bookings/{bookingId}', [TableBookingController::class, 'show']);
+        Route::post('/outlets/{outletId}/bookings/event', [BookingEventController::class, 'store']);
+        Route::put('/outlets/{outletId}/bookings/{bookingId}/advance', [BookingStatusController::class, 'advance']);
+        Route::put('/outlets/{outletId}/bookings/{bookingId}/cancel', [BookingStatusController::class, 'cancel']);
+        Route::put('/outlets/{outletId}/bookings/{bookingId}/no-show', [BookingStatusController::class, 'markNoShow']);
     });
 
     Route::middleware('role:owner')->group(function () {
