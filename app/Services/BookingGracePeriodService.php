@@ -17,6 +17,9 @@ class BookingGracePeriodService
         return TableBooking::where('outlet_id', $outletId)
             ->whereIn('status', self::ACTIVE_STATUSES)
             ->where('booking_datetime', '<', $cutoff)
-            ->update(['status' => 'no_show']);
+            ->update([
+                'status' => 'no_show',
+                'no_show_reason' => 'grace_period',
+            ]);
     }
 }

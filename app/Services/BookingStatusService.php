@@ -51,7 +51,10 @@ class BookingStatusService
             throw new InvalidArgumentException("Booking in status '{$booking->status}' cannot be marked as no-show.");
         }
 
-        $booking->update(['status' => 'no_show']);
+        $booking->update([
+            'status' => 'no_show',
+            'no_show_reason' => 'manual',
+        ]);
 
         return $booking->fresh();
     }

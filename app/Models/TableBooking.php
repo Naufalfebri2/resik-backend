@@ -24,6 +24,7 @@ class TableBooking extends Model
         'booking_datetime',
         'duration_minutes',
         'status',
+        'no_show_reason',
         'is_event',
         'notes',
     ];
