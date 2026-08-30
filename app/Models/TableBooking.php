@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\BookingStatusHistory;
 use App\Models\BookingTableAssignment;
 use App\Models\Outlet;
 use App\Models\Table;
@@ -10,10 +11,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TableBooking extends Model
 {
-    use HasFactory, HasUuid;
+    use HasFactory, HasUuid, SoftDeletes;
 
     protected $fillable = [
         'outlet_id',
@@ -47,5 +49,10 @@ class TableBooking extends Model
     public function tableAssignments(): HasMany
     {
         return $this->hasMany(BookingTableAssignment::class, 'booking_id');
+    }
+
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(BookingStatusHistory::class, 'booking_id')->orderBy('created_at');
     }
 }

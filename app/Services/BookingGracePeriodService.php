@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\TableBooking;
-use Illuminate\Support\Facades\DB;
 
 class BookingGracePeriodService
 {
@@ -14,12 +13,22 @@ class BookingGracePeriodService
     {
         $cutoff = now()->subMinutes(self::GRACE_PERIOD_MINUTES);
 
-        return TableBooking::where('outlet_id', $outletId)
+        $expiredBookings = TableBooking::where('outlet_id', $outletId)
             ->whereIn('status', self::ACTIVE_STATUSES)
             ->where('booking_datetime', '<', $cutoff)
-            ->update([
+            ->get();
+
+        foreach ($expiredBookings as $booking) {
+            $previousStatus = $booking->status;
+
+            $booking->update([
                 'status' => 'no_show',
                 'no_show_reason' => 'grace_period',
             ]);
+
+            BookingStatusService::logHistory($booking, $previousStatus, 'no_show', changedBy: null);
+        }
+
+        return $expiredBookings->count();
     }
 }

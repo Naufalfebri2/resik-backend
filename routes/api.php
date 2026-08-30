@@ -186,9 +186,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/outlets/{outletId}/bookings', [TableBookingController::class, 'index']);
         Route::get('/outlets/{outletId}/bookings/available-tables', [TableBookingController::class, 'availableTables']);
+        Route::get('/outlets/{outletId}/bookings/history', [TableBookingController::class, 'history']);
         Route::post('/outlets/{outletId}/bookings', [TableBookingController::class, 'store']);
-        Route::get('/outlets/{outletId}/bookings/{bookingId}', [TableBookingController::class, 'show']);
         Route::post('/outlets/{outletId}/bookings/event', [BookingEventController::class, 'store']);
+        Route::get('/outlets/{outletId}/bookings/{bookingId}', [TableBookingController::class, 'show']);
+        Route::put('/outlets/{outletId}/bookings/{bookingId}', [TableBookingController::class, 'update']);
+        Route::put('/outlets/{outletId}/bookings/{bookingId}/event', [BookingEventController::class, 'update']);
+        Route::delete('/outlets/{outletId}/bookings/{bookingId}', [TableBookingController::class, 'destroy']);
         Route::put('/outlets/{outletId}/bookings/{bookingId}/advance', [BookingStatusController::class, 'advance']);
         Route::put('/outlets/{outletId}/bookings/{bookingId}/cancel', [BookingStatusController::class, 'cancel']);
         Route::put('/outlets/{outletId}/bookings/{bookingId}/no-show', [BookingStatusController::class, 'markNoShow']);
@@ -203,3 +207,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/cash-accounts/{cashAccountId}/reconciliations/{reconciliationId}/reject', [CashReconciliationController::class, 'reject']);
     });
 });
+
