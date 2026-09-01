@@ -51,7 +51,7 @@ class BookingEventController extends Controller
             ], 422);
         }
 
-        $bookingDatetime = Carbon::parse($request->booking_datetime);
+        $bookingDatetime = Carbon::parse($request->booking_datetime)->setTimezone(config('app.timezone'));
         $durationMinutes = $request->duration_minutes ?? 120;
 
         $unavailableTableIds = BookingAvailabilityService::areTablesAvailable(
@@ -152,7 +152,7 @@ class BookingEventController extends Controller
             ], 422);
         }
 
-        $bookingDatetime = Carbon::parse($request->booking_datetime);
+        $bookingDatetime = Carbon::parse($request->booking_datetime)->setTimezone(config('app.timezone'));
         $durationMinutes = $request->duration_minutes ?? 120;
 
         $unavailableTableIds = BookingAvailabilityService::areTablesAvailable(
