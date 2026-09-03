@@ -60,6 +60,70 @@ class CashAccountController extends Controller
         ], 201);
     }
 
+    public function update(Request $request, string $outletId, string $cashAccountId)
+    {
+        $outlet = $this->findOwnedOutlet($request, $outletId);
+
+        if (!$outlet) {
+            return response()->json(['message' => 'Outlet not found'], 404);
+        }
+
+        $account = $outlet->cashAccounts()->find($cashAccountId);
+
+        if (!$account) {
+            return response()->json(['message' => 'Cash account not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:50',
+            'type' => 'required|in:cash,bank',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $account->update([
+            'name' => $request->name,
+            'type' => $request->type,
+        ]);
+
+        return response()->json([
+            'message' => 'Cash account updated successfully',
+            'cash_account' => $account,
+        ]);
+    }
+
+    public function destroy(Request $request, string $outletId, string $cashAccountId)
+    {
+        $outlet = $this->findOwnedOutlet($request, $outletId);
+
+        if (!$outlet) {
+            return response()->json(['message' => 'Outlet not found'], 404);
+        }
+
+        $account = $outlet->cashAccounts()->find($cashAccountId);
+
+        if (!$account) {
+            return response()->json(['message' => 'Cash account not found'], 404);
+        }
+
+        if ($account->cashTransactions()->exists() || $account->reconciliations()->exists()) {
+            return response()->json([
+                'message' => 'Cannot delete a cash account that already has transactions or reconciliations. Archive it instead.',
+            ], 422);
+        }
+
+        $account->delete();
+
+        return response()->json([
+            'message' => 'Cash account deleted successfully',
+        ]);
+    }
+
     private function findOwnedOutlet(Request $request, string $outletId): ?Outlet
     {
         return Outlet::where('tenant_id', $request->user()->tenant_id)->find($outletId);

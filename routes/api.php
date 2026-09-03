@@ -105,6 +105,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/outlets/{outletId}/purchase-orders/{purchaseOrderId}/status', [PurchaseOrderController::class, 'updateStatus']);
 
         Route::post('/outlets/{outletId}/cash-accounts', [CashAccountController::class, 'store']);
+        Route::put('/outlets/{outletId}/cash-accounts/{cashAccountId}', [CashAccountController::class, 'update']);
+        Route::delete('/outlets/{outletId}/cash-accounts/{cashAccountId}', [CashAccountController::class, 'destroy']);
         Route::get('/cash-accounts/{cashAccountId}/transactions', [CashTransactionController::class, 'index']);
         Route::post('/cash-accounts/{cashAccountId}/transactions', [CashTransactionController::class, 'store']);
 
@@ -207,4 +209,3 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/cash-accounts/{cashAccountId}/reconciliations/{reconciliationId}/reject', [CashReconciliationController::class, 'reject']);
     });
 });
-
